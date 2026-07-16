@@ -20,6 +20,8 @@ var DEFAULTS = {
   button: false,
   bevelMode: 0,
   lightAngle: 60,
+  specularConfine: 0,
+  specularEdgeWidth: 14,
   lightSharpness: 90,
   innerGlow: 1
 };
@@ -1265,6 +1267,8 @@ uniform float u_shadowSpread;
 uniform float u_shadowOffY;
 uniform float u_bevelMode;
 uniform vec2 u_lightDir;
+uniform float u_specConfine;
+uniform float u_specEdgeW;
 uniform float u_lightSharp;
 uniform float u_innerGlow;
 
@@ -1411,7 +1415,11 @@ void main() {
 	vec3 L4 = normalize(vec3(0.0, 0.9, 0.4));
 	vec3 H4 = normalize(L4 + V);
 	float sp4 = pow(max(dot(N, H4), 0.0), 120.0) * 0.6;
-	float totalSpec = (sp1 + sp2 + spB + sp4) * u_spec;
+	// confine specular to a crisp rim band so a high-intensity glow stays on the
+	// edge instead of washing across a curved (high z-radius) surface
+	float specBand = smoothstep(u_specEdgeW, 0.0, inside);
+	float specMask = mix(1.0, specBand, u_specConfine);
+	float totalSpec = (sp1 + sp2 + spB + sp4) * u_spec * specMask;
 
 	// \u2500\u2500 Inner border / stroke highlight \u2500\u2500
 	float borderWidth = 1.5;
@@ -1518,7 +1526,9 @@ var GlassRenderer = class {
       "u_bevelMode",
       "u_lightDir",
       "u_lightSharp",
-      "u_innerGlow"
+      "u_innerGlow",
+      "u_specConfine",
+      "u_specEdgeW"
     ]);
   }
   _initBuffers() {
@@ -1645,6 +1655,8 @@ var GlassRenderer = class {
     gl.uniform2f(this.glassU.u_lightDir, Math.cos(_ang) * 0.8, Math.sin(_ang) * 0.8);
     gl.uniform1f(this.glassU.u_lightSharp, config.lightSharpness);
     gl.uniform1f(this.glassU.u_innerGlow, config.innerGlow);
+    gl.uniform1f(this.glassU.u_specConfine, config.specularConfine);
+    gl.uniform1f(this.glassU.u_specEdgeW, config.specularEdgeWidth * dpr);
     this._drawQuad(this.glassP, this.panelBuf);
     gl.disable(gl.BLEND);
   }
