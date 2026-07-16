@@ -21,6 +21,7 @@ var DEFAULTS = {
   bevelMode: 0,
   lightAngle: 60,
   specularConfine: 0,
+  centerMagnify: 1,
   specularEdgeWidth: 14,
   lightSharpness: 90,
   innerGlow: 1
@@ -1268,6 +1269,7 @@ uniform float u_shadowOffY;
 uniform float u_bevelMode;
 uniform vec2 u_lightDir;
 uniform float u_specConfine;
+uniform float u_centerMag;
 uniform float u_specEdgeW;
 uniform float u_lightSharp;
 uniform float u_innerGlow;
@@ -1354,7 +1356,7 @@ void main() {
 		vec2 throughRefr = entryRefr * thickNorm * 0.5;
 		refrPx = (exitRefr + entryRefr + throughRefr) * u_refract * 30.0;
 		vec2 centerDir = -v_localPx / max(half_, vec2(1.0));
-		refrPx += centerDir * u_refract * 4.0 * depth;
+		refrPx += centerDir * u_refract * 4.0 * depth * u_centerMag;
 	} else {
 		// Dome (plano-convex): uniform magnification by contracting UV toward center.
 		// Each pixel samples from closer to center \u2192 content appears larger.
@@ -1528,7 +1530,8 @@ var GlassRenderer = class {
       "u_lightSharp",
       "u_innerGlow",
       "u_specConfine",
-      "u_specEdgeW"
+      "u_specEdgeW",
+      "u_centerMag"
     ]);
   }
   _initBuffers() {
@@ -1657,6 +1660,7 @@ var GlassRenderer = class {
     gl.uniform1f(this.glassU.u_innerGlow, config.innerGlow);
     gl.uniform1f(this.glassU.u_specConfine, config.specularConfine);
     gl.uniform1f(this.glassU.u_specEdgeW, config.specularEdgeWidth * dpr);
+    gl.uniform1f(this.glassU.u_centerMag, config.centerMagnify);
     this._drawQuad(this.glassP, this.panelBuf);
     gl.disable(gl.BLEND);
   }
